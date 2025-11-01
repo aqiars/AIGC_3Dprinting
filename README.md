@@ -1,3 +1,2 @@
 # AIGC_3Dprinting
 基于生成式AI与3D打印的校园文创产品定制平台
-test
