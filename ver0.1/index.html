@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>灵境造物 | AI 3D 定制平台</title>
+    
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <style>
+        /* === 3D 加载动画样式 === */
+        .loading-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(45, 55, 72, 0.95); /* 深色半透明背景 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: opacity 0.5s ease-out;
+        }
+        .loader-spinner {
+            width: 40px; height: 40px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid #4facfe; /* 蓝色高亮 */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        .loader-text {
+            color: #e2e8f0;
+            font-size: 0.95rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            font-family: monospace;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* === 基础样式 === */
+        :root {
+            --primary-color: #4facfe;
+            --secondary-color: #667eea;
+            --text-color: #2d3748;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        body {
+            font-family: 'PingFang SC', sans-serif;
+            background-image: var(--bg-gradient);
+            color: var(--text-color);
+            margin: 0; padding: 0;
+            min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .container { width: 100%; max-width: 900px; margin: 40px 20px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .logo { font-size: 1.5rem; font-weight: 800; background: linear-gradient(to right, #30cfd0, #330867); -webkit-background-clip: text; color: transparent; }
+        .user-badge { background: white; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 500; }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-radius: 24px; padding: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            min-height: 450px;
+        }
+
+        .step-content { display: none; animation: fadeIn 0.5s; }
+        .step-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 步骤条 */
+        .steps { display: flex; justify-content: center; margin-bottom: 40px; }
+        .step-item { color: #999; padding: 0 15px; font-weight: 500; }
+        .step-item.active { color: var(--secondary-color); transform: scale(1.1); font-weight: 700; }
+
+        /* 上传区 */
+        .upload-area { border: 3px dashed #e2e8f0; border-radius: 20px; padding: 40px; text-align: center; cursor: pointer; background: #f8fafc; transition: all 0.3s; }
+        .upload-area:hover { border-color: var(--secondary-color); background: #edf2f7; }
+        #previewImg { max-width: 100%; max-height: 300px; border-radius: 12px; display: none; margin: 0 auto; }
+
+        /* 3D 预览容器 (重要) */
+        .result-box {
+            background: #2d3748;
+            border-radius: 12px;
+            height: 350px; /* 固定高度 */
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        /* 按钮与表单 */
+        .btn { padding: 12px 30px; border-radius: 50px; border: none; cursor: pointer; font-size: 1rem; margin: 0 10px; font-weight: 600; }
+        .btn-primary { background: linear-gradient(to right, #667eea, #764ba2); color: white; box-shadow: 0 4px 15px rgba(100,100,255,0.4); }
+        .btn-secondary { background: white; border: 2px solid #e2e8f0; color: #718096; }
+        .btn:disabled { background: #cbd5e0; cursor: not-allowed; box-shadow: none; }
+        .btn-group { text-align: center; margin-top: 30px; }
+        
+        .path-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .path-card { border: 2px solid #e2e8f0; border-radius: 16px; padding: 20px; cursor: pointer; }
+        .path-card.selected { border-color: var(--secondary-color); background: #ebf4ff; }
+        
+        .form-select, .form-input { width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; margin-top: 5px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="header">
+        <div class="logo">🕊️ 灵境造物</div>
+        <div class="user-badge">👤 大一新生/Student</div>
+    </header>
+
+    <nav class="steps">
+        <span id="step-ind-1" class="step-item active">1. 上传</span> <span>›</span>
+        <span id="step-ind-2" class="step-item">2. 定制</span> <span>›</span>
+        <span id="step-ind-3" class="step-item">3. 生成</span> <span>›</span>
+        <span id="step-ind-4" class="step-item">4. 交付</span>
+    </nav>
+
+    <main class="card">
+        <section id="step-1" class="step-content active">
+            <h2 style="text-align: center;">上传你的创意原图</h2>
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <div id="uploadPlaceholder">
+                    <span style="font-size: 3rem;">📷</span>
+                    <p>点击选择图片 (JPG/PNG)</p>
+                </div>
+                <img id="previewImg" src="" />
+            </div>
+            <input type="file" id="fileInput" accept="image/*" style="display: none" onchange="handleFileSelect(this)">
+            <div class="btn-group">
+                <button id="btnStep1" class="btn btn-primary" disabled onclick="goToStep(2)">下一步 &rarr;</button>
+            </div>
+        </section>
+
+        <section id="step-2" class="step-content">
+            <h2 style="text-align: center;">定制参数</h2>
+            <div class="path-grid">
+                <div id="path-a" class="path-card" onclick="selectPath('PATH_A')">
+                    <strong>🅰️ 图形矢量化</strong><br><small>适合 Logo、文字</small>
+                </div>
+                <div id="path-b" class="path-card selected" onclick="selectPath('PATH_B')">
+                    <strong>🅱️ AI 创意生成</strong><br><small>适合手办、复杂物体</small>
+                </div>
+            </div>
+            <div id="ai-settings" class="custom-form" style="display: block;">
+                <div class="form-group">
+                    <label for="styleSelect" class="form-label">🎨 艺术风格</label>
+                    <select id="styleSelect" class="form-select">
+                        <option value="realistic">写实风格</option>
+                        <option value="cartoon">卡通手办</option>
+                        <option value="cyberpunk">赛博朋克</option>
+                    </select>
+                </div>
+                
+                <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #e2e8f0;">
+                    <div class="form-group">
+                        <label class="form-label">
+                            🏔️ 立体强度 (高度): <span id="val-z" style="color:var(--primary-color)">50</span>
+                        </label>
+                        <input type="range" id="inputZ" min="10" max="150" value="50" style="width:100%" 
+                               oninput="document.getElementById('val-z').innerText = this.value">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            💧 平滑程度 (降噪): <span id="val-s" style="color:var(--primary-color)">5</span>
+                        </label>
+                        <input type="range" id="inputS" min="1" max="15" step="2" value="5" style="width:100%" 
+                               oninput="document.getElementById('val-s').innerText = this.value">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="promptInput" class="form-label">📝 补充描述</label>
+                    <input type="text" id="promptInput" class="form-input" placeholder="例如：金色材质...">
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="goToStep(1)">上一步</button>
+                <button class="btn btn-primary" onclick="startGeneration()">开始生成 ✨</button>
+            </div>
+        </section>
+
+        <section id="step-3" class="step-content">
+            <div style="text-align: center; padding: 40px;">
+                <div class="loader-spinner" style="margin: 0 auto; border-color: #e2e8f0; border-top-color: var(--secondary-color);"></div>
+                <h2 id="statusTitle">AI 正在思考...</h2>
+                <p id="statusLog" style="color: #718096;">> 初始化神经网络...</p>
+                <div style="background: #edf2f7; height: 10px; border-radius: 5px; margin-top: 30px; overflow: hidden;">
+                    <div id="progressBar" style="width: 0%; height: 100%; background: var(--secondary-color); transition: width 0.3s;"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="step-4" class="step-content">
+            <h2 style="text-align: center; color: #48bb78;">🎉 生成成功！</h2>
+            
+            <div id="three-container" class="result-box">
+                <div id="loading-overlay" class="loading-overlay">
+                    <div class="loader-spinner"></div>
+                    <div id="loader-text" class="loader-text">📡 正在初始化 3D 引擎...</div>
+                </div>
+            </div>
+
+            <div style="background: #f0fff4; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; color: #276749;">
+                <strong>参数快照：</strong> 模式：<span id="res-mode">AI生成</span>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="resetApp()">再做一个</button>
+                <a id="downloadLink" href="#" target="_blank">
+                    <button class="btn btn-primary">下载 .OBJ 模型</button>
+                </a>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // 挂载到全局
+    window.init3DViewer = function(url) {
+        const container = document.getElementById('three-container');
+        const overlay = document.getElementById('loading-overlay');
+        const statusText = document.getElementById('loader-text');
+        
+        // 1. 重置界面状态
+        overlay.style.display = 'flex';
+        overlay.style.opacity = '1';
+        statusText.innerText = "📦 正在下载模型数据...";
+
+        // 2. 关键修复：清理可能存在的旧画布，防止重复渲染
+        const oldCanvas = container.querySelector('canvas');
+        if (oldCanvas) {
+            oldCanvas.remove();
+        }
+
+        // 3. 初始化场景
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x2d3748);
+
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement); // 插入新画布
+
+        // 4. 灯光与控制
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.autoRotate = true; // 自动旋转
+
+        // 5. 加载模型
+        const loader = new OBJLoader();
+        loader.load(
+            url,
+            (object) => {
+                // 加载成功
+                statusText.innerText = "✨ 解析完成，渲染中...";
+                
+                // 调整材质
+                object.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material = new THREE.MeshPhongMaterial({
+                            color: 0xe0e0e0,
+                            specular: 0x111111,
+                            shininess: 30
+                        });
+                    }
+                });
+
+                // 自动缩放与居中
+                const box = new THREE.Box3().setFromObject(object);
+                const size = box.getSize(new THREE.Vector3());
+                const center = box.getCenter(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = 3.5 / (maxDim || 1); // 防止 maxDim 为 0
+                
+                object.scale.set(scale, scale, scale);
+                object.position.sub(center.multiplyScalar(scale));
+                scene.add(object);
+
+                // 动画循环
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    controls.update();
+                    renderer.render(scene, camera);
+                };
+                animate();
+
+                // 隐藏遮罩
+                setTimeout(() => {
+                    overlay.style.opacity = '0';
+                    setTimeout(() => { overlay.style.display = 'none'; }, 500);
+                }, 800);
+            },
+            (xhr) => {
+                // 进度更新
+                if (xhr.lengthComputable) {
+                    const percent = Math.round((xhr.loaded / xhr.total) * 100);
+                    statusText.innerText = `📡 传输中... ${percent}%`;
+                }
+            },
+            (err) => {
+                // 错误处理
+                console.error(err);
+                statusText.innerText = "❌ 加载失败 (请检查网络或跨域)";
+                statusText.style.color = "#fc8181";
+                document.querySelector('.loader-spinner').style.display = 'none';
+            }
+        );
+
+        // 窗口大小自适应
+        window.addEventListener('resize', () => {
+            if (container && camera && renderer) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        });
+    }
+</script>
+
+<script>
+    let currentPath = 'PATH_B';
+
+    function goToStep(step) {
+        document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+        document.getElementById(`step-${step}`).classList.add('active');
+        // 更新顶部步骤条样式
+        for(let i=1; i<=4; i++) {
+            const el = document.getElementById(`step-ind-${i}`);
+            if(i <= step) el.classList.add('active');
+            else el.classList.remove('active');
+        }
+    }
+
+    function handleFileSelect(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById('previewImg');
+                img.src = e.target.result;
+                img.style.display = 'block';
+                document.getElementById('uploadPlaceholder').style.display = 'none';
+                document.getElementById('btnStep1').disabled = false;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function selectPath(path) {
+        currentPath = path;
+        document.querySelectorAll('.path-card').forEach(el => el.classList.remove('selected'));
+        if (path === 'PATH_A') {
+            document.getElementById('path-a').classList.add('selected');
+            document.getElementById('ai-settings').style.display = 'none';
+        } else {
+            document.getElementById('path-b').classList.add('selected');
+            document.getElementById('ai-settings').style.display = 'block';
+        }
+    }
+
+    async function startGeneration() {
+        goToStep(3);
+        const log = document.getElementById('statusLog');
+        const bar = document.getElementById('progressBar');
+        const title = document.getElementById('statusTitle');
+        
+        log.innerText = "> 正在上传图片并连接云端...";
+
+        const formData = new FormData();
+        const fileInput = document.getElementById('fileInput');
+        if(!fileInput.files[0]) return;
+
+        formData.append('image', fileInput.files[0]);
+        formData.append('algorithm', currentPath);
+        formData.append('style', document.getElementById('styleSelect').value);
+        formData.append('prompt', document.getElementById('promptInput').value);
+        formData.append('z_scale', document.getElementById('inputZ').value);
+        formData.append('smoothness', document.getElementById('inputS').value);
+
+        try {
+            // 请确保这里端口号和你后端运行的一致 (通常是 8000)
+            const response = await fetch('http://127.0.0.1:8000/api/generate/', {
+                method: 'POST', body: formData
+            });
+
+            if (!response.ok) throw new Error("API Error");
+            const data = await response.json();
+            const taskId = data.task_id;
+
+            // 轮询状态
+            let progress = 10;
+            const interval = setInterval(async () => {
+                try {
+                    const statusRes = await fetch(`http://127.0.0.1:8000/api/tasks/${taskId}/`);
+                    const statusData = await statusRes.json();
+
+                    if (statusData.status === 'PROCESSING') {
+                        progress += 5;
+                        if (progress > 90) progress = 90;
+                        bar.style.width = progress + '%';
+                        log.innerText = `> AI 正在构建模型几何体... ${progress}%`;
+                    } 
+                    else if (statusData.status === 'SUCCESS') {
+                        clearInterval(interval);
+                        bar.style.width = '100%';
+                        title.innerText = "生成完成！";
+                        
+                        // 启动 3D 预览
+                        if(statusData.model_url && typeof window.init3DViewer === 'function') {
+                            window.init3DViewer(statusData.model_url);
+                        }
+
+                        // 设置下载链接
+                        if(statusData.model_url) {
+                            document.getElementById('downloadLink').href = statusData.model_url;
+                        }
+                        
+                        // 跳转
+                        setTimeout(() => goToStep(4), 500);
+                    }
+                    else if (statusData.status === 'FAILED') {
+                        clearInterval(interval);
+                        title.innerText = "生成失败";
+                        log.innerText = "后端报错，请检查 Python 终端日志";
+                        log.style.color = "red";
+                    }
+                } catch (e) { console.error(e); }
+            }, 1000);
+
+        } catch (error) {
+            title.innerText = "连接失败";
+            log.innerText = "无法连接到后端，请确认 python manage.py runserver 正在运行";
+            log.style.color = "red";
+        }
+    }
+
+    function resetApp() { location.reload(); }
+</script>
+
+</body>
+</html>
