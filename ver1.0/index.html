@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>灵境造物 | AI 3D 定制平台</title>
+    <title>灵境造物</title>
     
     <script type="importmap">
     {
@@ -19,7 +19,7 @@
         .loading-overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(45, 55, 72, 0.95); /* 深色半透明背景 */
+            background: rgba(45, 55, 72, 0.95);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -30,7 +30,7 @@
         .loader-spinner {
             width: 40px; height: 40px;
             border: 4px solid rgba(255,255,255,0.1);
-            border-top: 4px solid #4facfe; /* 蓝色高亮 */
+            border-top: 4px solid #4facfe;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 15px;
@@ -73,6 +73,7 @@
             border-radius: 24px; padding: 50px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             min-height: 450px;
+            position: relative;
         }
 
         .step-content { display: none; animation: fadeIn 0.5s; }
@@ -89,11 +90,11 @@
         .upload-area:hover { border-color: var(--secondary-color); background: #edf2f7; }
         #previewImg { max-width: 100%; max-height: 300px; border-radius: 12px; display: none; margin: 0 auto; }
 
-        /* 3D 预览容器 (重要) */
+        /* 3D 预览容器 */
         .result-box {
             background: #2d3748;
             border-radius: 12px;
-            height: 350px; /* 固定高度 */
+            height: 350px;
             width: 100%;
             position: relative;
             overflow: hidden;
@@ -101,24 +102,114 @@
         }
 
         /* 按钮与表单 */
-        .btn { padding: 12px 30px; border-radius: 50px; border: none; cursor: pointer; font-size: 1rem; margin: 0 10px; font-weight: 600; }
+        .btn { padding: 12px 30px; border-radius: 50px; border: none; cursor: pointer; font-size: 1rem; margin: 0 10px; font-weight: 600; transition: all 0.2s; }
         .btn-primary { background: linear-gradient(to right, #667eea, #764ba2); color: white; box-shadow: 0 4px 15px rgba(100,100,255,0.4); }
         .btn-secondary { background: white; border: 2px solid #e2e8f0; color: #718096; }
+        .btn-warning { background: #f56565; color: white; border: none; box-shadow: 0 4px 10px rgba(245,101,101,0.3);}
         .btn:disabled { background: #cbd5e0; cursor: not-allowed; box-shadow: none; }
-        .btn-group { text-align: center; margin-top: 30px; }
+        .btn-group { text-align: center; margin-top: 30px; display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
         
-        .path-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        /* 三选一布局：无文字 / 立牌 / 浮雕 */
+        .mode-grid { display: flex; gap: 12px; justify-content: center; margin: 25px 0 15px; }
+        .mode-chip {
+            flex: 1;
+            border: 2px solid #e2e8f0; border-radius: 40px;
+            padding: 12px 8px; text-align: center; font-weight: 600;
+            cursor: pointer; background: white; transition: all 0.2s;
+        }
+        .mode-chip.selected { border-color: var(--secondary-color); background: #ebf4ff; box-shadow: 0 2px 10px rgba(102,126,234,0.2); }
+        .mode-icon { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+
+        .path-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
         .path-card { border: 2px solid #e2e8f0; border-radius: 16px; padding: 20px; cursor: pointer; }
         .path-card.selected { border-color: var(--secondary-color); background: #ebf4ff; }
         
         .form-select, .form-input { width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; margin-top: 5px; box-sizing: border-box; }
+
+        /* 文字参数卡片 */
+        .text-params {
+            background: #f0f4fa;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0 10px;
+            border: 1px solid #cbd5e0;
+        }
+        .text-params label { font-weight: 600; display: block; margin-top: 12px; }
+        .text-params .small-input { display: flex; gap: 15px; align-items: center; }
+        .text-params input[type="text"] { flex: 1; padding: 10px; border-radius: 30px; border: 1px solid #ccc; }
+        .text-params input[type="range"] { width: 100%; }
+
+        /* 阴阳刻切换按钮组 */
+        .engraving-toggle {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+            background: white;
+            padding: 10px;
+            border-radius: 50px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .engraving-option {
+            flex: 1;
+            text-align: center;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+        
+        .engraving-option.yang {
+            background: white;
+            color: #2d3748;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .engraving-option.yang.selected {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 10px rgba(102,126,234,0.3);
+        }
+        
+        .engraving-option.yin {
+            background: white;
+            color: #2d3748;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .engraving-option.yin.selected {
+            background: linear-gradient(135deg, #4a5568, #2d3748);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        /* 模式提示 */
+        .mode-hint {
+            font-size: 0.9rem;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: white;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .mode-hint.yang { color: #667eea; border-left: 4px solid #667eea; }
+        .mode-hint.yin { color: #4a5568; border-left: 4px solid #4a5568; }
+
+        /* 生成页的取消按钮容器 */
+        .cancel-generate { margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header class="header">
-        <div class="logo">🕊️ 灵境造物</div>
+        <div class="logo">🕊️ 灵境造物 · 立牌工坊</div>
         <div class="user-badge">👤 大一新生/Student</div>
     </header>
 
@@ -130,6 +221,7 @@
     </nav>
 
     <main class="card">
+        <!-- 步骤1：上传图片 -->
         <section id="step-1" class="step-content active">
             <h2 style="text-align: center;">上传你的创意原图</h2>
             <div class="upload-area" onclick="document.getElementById('fileInput').click()">
@@ -145,8 +237,78 @@
             </div>
         </section>
 
+        <!-- 步骤2：定制参数（包含无文字/立牌/浮雕三选一） -->
         <section id="step-2" class="step-content">
             <h2 style="text-align: center;">定制参数</h2>
+            
+            <!-- 核心功能切换 - 无文字 / 平面立牌 / 浮雕 -->
+            <div class="mode-grid">
+                <div id="mode-none" class="mode-chip selected" onclick="setTextMode('none')">
+                    <span class="mode-icon">🔲</span> 无文字
+                </div>
+                <div id="mode-sign" class="mode-chip" onclick="setTextMode('sign')">
+                    <span class="mode-icon">🪧</span> 平面立牌
+                </div>
+                <div id="mode-relief" class="mode-chip" onclick="setTextMode('relief')">
+                    <span class="mode-icon">⛰️</span> 浮雕
+                </div>
+            </div>
+
+            <!-- 文字参数区域 (立牌/浮雕共用) -->
+            <div id="textParamsArea" class="text-params" style="display: none;">
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+                    <span style="background: #667eea; color: white; padding: 4px 16px; border-radius: 30px; font-size:0.9rem;">✍️ 文字内容</span>
+                </div>
+                
+                <!-- 文字输入 -->
+                <div class="small-input">
+                    <input type="text" id="signText" placeholder="例如：灵境造物" value="灵境">
+                    <select id="fontStyle" style="padding: 10px; border-radius: 30px;">
+                        <option value="bold">粗体</option>
+                        <option value="regular">常规</option>
+                        <option value="elegant">手写体</option>
+                    </select>
+                </div>
+                
+                <!-- 尺寸调节 -->
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+                    <div style="flex:1">
+                        <label>📏 文字高度 <span id="textHeightVal">15</span> mm</label>
+                        <input type="range" id="textHeight" min="5" max="40" value="15" oninput="document.getElementById('textHeightVal').innerText=this.value">
+                    </div>
+                    <div style="flex:1">
+                        <label>📐 凸起/深度 <span id="depthVal">5</span> mm</label>
+                        <input type="range" id="depthAmount" min="1" max="20" value="5" oninput="document.getElementById('depthVal').innerText=this.value">
+                    </div>
+                </div>
+
+                <!-- 修复：阳刻/阴刻独立选项（不再是复选框） -->
+                <div style="margin-top: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">⚡ 雕刻方式</label>
+                    <div class="engraving-toggle">
+                        <div id="engravingYang" class="engraving-option yang selected" onclick="setEngravingType('yang')">
+                            ☀️ 阳刻 (凸起)
+                        </div>
+                        <div id="engravingYin" class="engraving-option yin" onclick="setEngravingType('yin')">
+                            🌙 阴刻 (凹陷)
+                        </div>
+                    </div>
+                    
+                    <!-- 动态提示 -->
+                    <div id="engravingHint" class="mode-hint yang">
+                        <span>✨</span>
+                        <span id="hintText">阳刻：文字凸出于表面，适合醒目展示</span>
+                    </div>
+                </div>
+
+                <!-- 模式专属提示 -->
+                <div id="modeSpecialHint" style="margin-top: 15px; padding: 12px; background: rgba(102,126,234,0.1); border-radius: 8px; font-size:0.9rem;">
+                    <span id="modeHintIcon">🪧</span>
+                    <span id="modeHintText">平面立牌模式：文字有垂直侧面，像贴在表面的立体字</span>
+                </div>
+            </div>
+
+            <!-- 算法选择 -->
             <div class="path-grid">
                 <div id="path-a" class="path-card" onclick="selectPath('PATH_A')">
                     <strong>🅰️ 图形矢量化</strong><br><small>适合 Logo、文字</small>
@@ -155,6 +317,8 @@
                     <strong>🅱️ AI 创意生成</strong><br><small>适合手办、复杂物体</small>
                 </div>
             </div>
+
+            <!-- AI 设置区域 -->
             <div id="ai-settings" class="custom-form" style="display: block;">
                 <div class="form-group">
                     <label for="styleSelect" class="form-label">🎨 艺术风格</label>
@@ -167,43 +331,46 @@
                 
                 <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #e2e8f0;">
                     <div class="form-group">
-                        <label class="form-label">
-                            🏔️ 立体强度 (高度): <span id="val-z" style="color:var(--primary-color)">50</span>
-                        </label>
+                        <label class="form-label">🏔️ 立体强度 (高度): <span id="val-z" style="color:var(--primary-color)">50</span></label>
                         <input type="range" id="inputZ" min="10" max="150" value="50" style="width:100%" 
                                oninput="document.getElementById('val-z').innerText = this.value">
                     </div>
-
                     <div class="form-group">
-                        <label class="form-label">
-                            💧 平滑程度 (降噪): <span id="val-s" style="color:var(--primary-color)">5</span>
-                        </label>
+                        <label class="form-label">💧 平滑程度 (降噪): <span id="val-s" style="color:var(--primary-color)">5</span></label>
                         <input type="range" id="inputS" min="1" max="15" step="2" value="5" style="width:100%" 
                                oninput="document.getElementById('val-s').innerText = this.value">
                     </div>
                 </div>
+
                 <div class="form-group">
                     <label for="promptInput" class="form-label">📝 补充描述</label>
                     <input type="text" id="promptInput" class="form-input" placeholder="例如：金色材质...">
                 </div>
             </div>
+
             <div class="btn-group">
                 <button class="btn btn-secondary" onclick="goToStep(1)">上一步</button>
                 <button class="btn btn-primary" onclick="startGeneration()">开始生成 ✨</button>
             </div>
         </section>
 
+        <!-- 步骤3：生成中 -->
         <section id="step-3" class="step-content">
-            <div style="text-align: center; padding: 40px;">
+            <div style="text-align: center; padding: 20px 40px 40px;">
                 <div class="loader-spinner" style="margin: 0 auto; border-color: #e2e8f0; border-top-color: var(--secondary-color);"></div>
                 <h2 id="statusTitle">AI 正在思考...</h2>
                 <p id="statusLog" style="color: #718096;">> 初始化神经网络...</p>
                 <div style="background: #edf2f7; height: 10px; border-radius: 5px; margin-top: 30px; overflow: hidden;">
                     <div id="progressBar" style="width: 0%; height: 100%; background: var(--secondary-color); transition: width 0.3s;"></div>
                 </div>
+
+                <div class="btn-group cancel-generate">
+                    <button class="btn btn-warning" onclick="cancelGeneration()">↩ 取消生成，返回修改</button>
+                </div>
             </div>
         </section>
 
+        <!-- 步骤4：交付 3D预览 -->
         <section id="step-4" class="step-content">
             <h2 style="text-align: center; color: #48bb78;">🎉 生成成功！</h2>
             
@@ -215,7 +382,10 @@
             </div>
 
             <div style="background: #f0fff4; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; color: #276749;">
-                <strong>参数快照：</strong> 模式：<span id="res-mode">AI生成</span>
+                <strong>参数快照：</strong> 
+                模式：<span id="res-mode">AI生成</span> · 
+                文字：<span id="res-text">无</span> · 
+                雕刻：<span id="res-engraving">阳刻</span>
             </div>
             <div class="btn-group">
                 <button class="btn btn-secondary" onclick="resetApp()">再做一个</button>
@@ -232,24 +402,18 @@
     import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-    // 挂载到全局
     window.init3DViewer = function(url) {
         const container = document.getElementById('three-container');
         const overlay = document.getElementById('loading-overlay');
         const statusText = document.getElementById('loader-text');
         
-        // 1. 重置界面状态
         overlay.style.display = 'flex';
         overlay.style.opacity = '1';
         statusText.innerText = "📦 正在下载模型数据...";
 
-        // 2. 关键修复：清理可能存在的旧画布，防止重复渲染
         const oldCanvas = container.querySelector('canvas');
-        if (oldCanvas) {
-            oldCanvas.remove();
-        }
+        if (oldCanvas) oldCanvas.remove();
 
-        // 3. 初始化场景
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x2d3748);
 
@@ -259,9 +423,8 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(container.clientWidth, container.clientHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
-        container.appendChild(renderer.domElement); // 插入新画布
+        container.appendChild(renderer.domElement);
 
-        // 4. 灯光与控制
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -270,17 +433,14 @@
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.autoRotate = true; // 自动旋转
+        controls.autoRotate = true;
 
-        // 5. 加载模型
         const loader = new OBJLoader();
         loader.load(
             url,
             (object) => {
-                // 加载成功
                 statusText.innerText = "✨ 解析完成，渲染中...";
                 
-                // 调整材质
                 object.traverse((child) => {
                     if (child.isMesh) {
                         child.material = new THREE.MeshPhongMaterial({
@@ -291,18 +451,16 @@
                     }
                 });
 
-                // 自动缩放与居中
                 const box = new THREE.Box3().setFromObject(object);
                 const size = box.getSize(new THREE.Vector3());
                 const center = box.getCenter(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
-                const scale = 3.5 / (maxDim || 1); // 防止 maxDim 为 0
+                const scale = 3.5 / (maxDim || 1);
                 
                 object.scale.set(scale, scale, scale);
                 object.position.sub(center.multiplyScalar(scale));
                 scene.add(object);
 
-                // 动画循环
                 const animate = () => {
                     requestAnimationFrame(animate);
                     controls.update();
@@ -310,21 +468,18 @@
                 };
                 animate();
 
-                // 隐藏遮罩
                 setTimeout(() => {
                     overlay.style.opacity = '0';
                     setTimeout(() => { overlay.style.display = 'none'; }, 500);
                 }, 800);
             },
             (xhr) => {
-                // 进度更新
                 if (xhr.lengthComputable) {
                     const percent = Math.round((xhr.loaded / xhr.total) * 100);
                     statusText.innerText = `📡 传输中... ${percent}%`;
                 }
             },
             (err) => {
-                // 错误处理
                 console.error(err);
                 statusText.innerText = "❌ 加载失败 (请检查网络或跨域)";
                 statusText.style.color = "#fc8181";
@@ -332,7 +487,6 @@
             }
         );
 
-        // 窗口大小自适应
         window.addEventListener('resize', () => {
             if (container && camera && renderer) {
                 camera.aspect = container.clientWidth / container.clientHeight;
@@ -344,12 +498,16 @@
 </script>
 
 <script>
+    // ---------- 全局变量 ----------
     let currentPath = 'PATH_B';
+    let textMode = 'none';        // 'none' 无文字, 'sign' 平面立牌, 'relief' 浮雕
+    let engravingType = 'yang';    // 'yang' 阳刻(凸起), 'yin' 阴刻(凹陷)
+    let pollInterval = null;
 
+    // ---------- 步骤切换 ----------
     function goToStep(step) {
         document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
         document.getElementById(`step-${step}`).classList.add('active');
-        // 更新顶部步骤条样式
         for(let i=1; i<=4; i++) {
             const el = document.getElementById(`step-ind-${i}`);
             if(i <= step) el.classList.add('active');
@@ -357,6 +515,7 @@
         }
     }
 
+    // ---------- 图片上传 ----------
     function handleFileSelect(input) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
@@ -371,6 +530,85 @@
         }
     }
 
+    // ---------- 文字模式切换 ----------
+    function setTextMode(mode) {
+        textMode = mode;
+        
+        // 更新UI选中态
+        document.getElementById('mode-none').classList.remove('selected');
+        document.getElementById('mode-sign').classList.remove('selected');
+        document.getElementById('mode-relief').classList.remove('selected');
+        document.getElementById(`mode-${mode}`).classList.add('selected');
+        
+        // 显示/隐藏文字参数区域
+        const textArea = document.getElementById('textParamsArea');
+        if (mode === 'none') {
+            textArea.style.display = 'none';
+        } else {
+            textArea.style.display = 'block';
+            
+            // 根据模式更新提示
+            const hintIcon = document.getElementById('modeHintIcon');
+            const hintText = document.getElementById('modeHintText');
+            
+            if (mode === 'sign') {
+                hintIcon.innerText = '🪧';
+                hintText.innerText = '平面立牌模式：文字有垂直侧面，像贴在表面的立体字，适合标识标牌';
+            } else {
+                hintIcon.innerText = '⛰️';
+                hintText.innerText = '浮雕模式：文字与背景平滑过渡，无垂直侧面，适合艺术装饰';
+            }
+        }
+        
+        // 更新雕刻方式提示
+        updateEngravingHint();
+    }
+
+    // ---------- 新增：设置阳刻/阴刻 ----------
+    function setEngravingType(type) {
+        engravingType = type;
+        
+        // 更新UI
+        document.getElementById('engravingYang').classList.remove('selected');
+        document.getElementById('engravingYin').classList.remove('selected');
+        document.getElementById(`engraving${type === 'yang' ? 'Yang' : 'Yin'}`).classList.add('selected');
+        
+        // 更新提示
+        updateEngravingHint();
+    }
+    
+    // 更新雕刻方式提示
+    function updateEngravingHint() {
+        const hint = document.getElementById('engravingHint');
+        const hintText = document.getElementById('hintText');
+        
+        if (engravingType === 'yang') {
+            hint.className = 'mode-hint yang';
+            hintText.innerText = '阳刻：文字凸出于表面，立体感强，适合醒目展示';
+        } else {
+            hint.className = 'mode-hint yin';
+            hintText.innerText = '阴刻：文字凹陷于表面，内敛精致，适合印章风格';
+        }
+        
+        // 结合模式微调提示
+        if (textMode === 'sign') {
+            // 平面立牌模式下的阴阳刻说明
+            if (engravingType === 'yang') {
+                hintText.innerText += '，文字像粘贴在底板上';
+            } else {
+                hintText.innerText += '，文字像挖槽嵌入';
+            }
+        } else if (textMode === 'relief') {
+            // 浮雕模式下的阴阳刻说明
+            if (engravingType === 'yang') {
+                hintText.innerText += '，从背景中生长出来';
+            } else {
+                hintText.innerText += '，刻入背景之中';
+            }
+        }
+    }
+
+    // ---------- 算法路径选择 ----------
     function selectPath(path) {
         currentPath = path;
         document.querySelectorAll('.path-card').forEach(el => el.classList.remove('selected'));
@@ -383,6 +621,19 @@
         }
     }
 
+    // ---------- 取消生成 ----------
+    function cancelGeneration() {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+        document.getElementById('progressBar').style.width = '0%';
+        document.getElementById('statusLog').innerText = '> 操作已取消';
+        document.getElementById('statusTitle').innerText = '生成中止';
+        goToStep(2);
+    }
+
+    // ---------- 开始生成 ----------
     async function startGeneration() {
         goToStep(3);
         const log = document.getElementById('statusLog');
@@ -390,11 +641,14 @@
         const title = document.getElementById('statusTitle');
         
         log.innerText = "> 正在上传图片并连接云端...";
+        log.style.color = "#718096";
+        title.innerText = "AI 正在思考...";
+        bar.style.width = '0%';
 
-        const formData = new FormData();
         const fileInput = document.getElementById('fileInput');
         if(!fileInput.files[0]) return;
 
+        const formData = new FormData();
         formData.append('image', fileInput.files[0]);
         formData.append('algorithm', currentPath);
         formData.append('style', document.getElementById('styleSelect').value);
@@ -402,8 +656,20 @@
         formData.append('z_scale', document.getElementById('inputZ').value);
         formData.append('smoothness', document.getElementById('inputS').value);
 
+        // 文字模式参数
+        formData.append('text_mode', textMode);
+        if (textMode !== 'none') {
+            formData.append('sign_text', document.getElementById('signText').value);
+            formData.append('font_style', document.getElementById('fontStyle').value);
+            formData.append('text_height_mm', document.getElementById('textHeight').value);
+            formData.append('depth_mm', document.getElementById('depthAmount').value);
+            formData.append('is_relief', textMode === 'relief' ? 'true' : 'false');
+            
+            // 修复：传递阳刻/阴刻参数，不再是布尔值
+            formData.append('engraving_type', engravingType);  // 'yang' 或 'yin'
+        }
+
         try {
-            // 请确保这里端口号和你后端运行的一致 (通常是 8000)
             const response = await fetch('http://127.0.0.1:8000/api/generate/', {
                 method: 'POST', body: formData
             });
@@ -412,9 +678,10 @@
             const data = await response.json();
             const taskId = data.task_id;
 
-            // 轮询状态
             let progress = 10;
-            const interval = setInterval(async () => {
+            if (pollInterval) clearInterval(pollInterval);
+
+            pollInterval = setInterval(async () => {
                 try {
                     const statusRes = await fetch(`http://127.0.0.1:8000/api/tasks/${taskId}/`);
                     const statusData = await statusRes.json();
@@ -426,30 +693,37 @@
                         log.innerText = `> AI 正在构建模型几何体... ${progress}%`;
                     } 
                     else if (statusData.status === 'SUCCESS') {
-                        clearInterval(interval);
+                        clearInterval(pollInterval);
+                        pollInterval = null;
                         bar.style.width = '100%';
                         title.innerText = "生成完成！";
                         
-                        // 启动 3D 预览
+                        // 更新结果快照
+                        document.getElementById('res-mode').innerText = 
+                            textMode === 'none' ? '无文字' : (textMode === 'sign' ? '平面立牌' : '浮雕');
+                        document.getElementById('res-text').innerText = textMode !== 'none' ? document.getElementById('signText').value : '无';
+                        document.getElementById('res-engraving').innerText = engravingType === 'yang' ? '阳刻' : '阴刻';
+
                         if(statusData.model_url && typeof window.init3DViewer === 'function') {
                             window.init3DViewer(statusData.model_url);
                         }
 
-                        // 设置下载链接
                         if(statusData.model_url) {
                             document.getElementById('downloadLink').href = statusData.model_url;
                         }
                         
-                        // 跳转
                         setTimeout(() => goToStep(4), 500);
                     }
                     else if (statusData.status === 'FAILED') {
-                        clearInterval(interval);
+                        clearInterval(pollInterval);
+                        pollInterval = null;
                         title.innerText = "生成失败";
                         log.innerText = "后端报错，请检查 Python 终端日志";
                         log.style.color = "red";
                     }
-                } catch (e) { console.error(e); }
+                } catch (e) { 
+                    console.error(e);
+                }
             }, 1000);
 
         } catch (error) {
@@ -460,6 +734,13 @@
     }
 
     function resetApp() { location.reload(); }
+
+    // 初始化
+    window.onload = function() {
+        setTextMode('none');
+        setEngravingType('yang');  // 默认阳刻
+        selectPath('PATH_B');
+    };
 </script>
 
 </body>
